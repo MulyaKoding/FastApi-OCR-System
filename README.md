@@ -117,10 +117,16 @@ GROQ_API_KEY=gsk_your_groq_api_key_here
 Buka terminal pada folder project dan jalankan perintah:
 
 ```bash
-uvicorn main:app --reload --port 8080
+python -m uvicorn main:app --reload
 ```
 
-- **Backend API Server**: `http://127.0.0.1:8080`
+Atau jika ingin menentukan port secara spesifik:
+
+```bash
+python -m uvicorn main:app --reload --port 8080
+```
+
+- **Backend API Server**: `http://127.0.0.1:8080` (atau `http://127.0.0.1:8000`)
 - **Swagger UI Interactive Docs**: `http://127.0.0.1:8080/docs`
 - **ReDoc Documentation**: `http://127.0.0.1:8080/redoc`
 
