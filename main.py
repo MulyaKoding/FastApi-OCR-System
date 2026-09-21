@@ -59,5 +59,5 @@ async def scan_ktp(file: UploadFile = File(...)):
 if __name__ == "__main__":
     import uvicorn
     import os
-    port = int(os.getenv("APP_PORT", 8080))
-    uvicorn.run("main:app", host="127.0.0.1", port=port, reload=True)
+    port = int(os.getenv("PORT", 8080))
+    uvicorn.run("main:app", host="0.0.0.0", port=port, reload=False)
