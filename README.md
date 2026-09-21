@@ -114,19 +114,21 @@ GROQ_API_KEY=gsk_your_groq_api_key_here
 
 ### Step 1: Jalankan Backend Server (FastAPI)
 
-Buka terminal pada folder project dan jalankan perintah:
+Buka terminal pada direktori `fastapi` dan jalankan salah satu perintah berikut:
 
-```bash
-python -m uvicorn main:app --reload
-```
+- **Cara 1 (Paling Mudah)**:
 
-Atau jika ingin menentukan port secara spesifik:
+  ```bash
+  python main.py
+  ```
 
-```bash
-python -m uvicorn main:app --reload --port 8080
-```
+- **Cara 2 (Uvicorn CLI)**:
 
-- **Backend API Server**: `http://127.0.0.1:8080` (atau `http://127.0.0.1:8000`)
+  ```bash
+  python -m uvicorn main:app --port 8080 --reload
+  ```
+
+- **Backend API Server**: `http://127.0.0.1:8080`
 - **Swagger UI Interactive Docs**: `http://127.0.0.1:8080/docs`
 - **ReDoc Documentation**: `http://127.0.0.1:8080/redoc`
 

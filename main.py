@@ -54,3 +54,10 @@ async def scan_ktp(file: UploadFile = File(...)):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Terjadi kesalahan saat memproses KTP")
+
+
+if __name__ == "__main__":
+    import uvicorn
+    import os
+    port = int(os.getenv("APP_PORT", 8080))
+    uvicorn.run("main:app", host="127.0.0.1", port=port, reload=True)
