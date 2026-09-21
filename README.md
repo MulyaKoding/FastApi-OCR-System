@@ -35,7 +35,7 @@ Sistem secara otomatis:
 - 🎯 **Computer Vision Card Detection**: Deteksi otomatis batas fisik kartu KTP berbasis OpenCV tanpa halusinasi koordinat AI.
 - 🖼️ **Interactive Bounding Box Overlays**: Pemetaan kotak border visual yang pas dan fleksibel mengikuti orientasi & skala foto KTP.
 - ⚡ **Asynchronous Database**: Integrasi MongoDB menggunakan `motor` untuk performa tinggi.
-- 📱 **UI Responsif & Modern**: Tampilan antarmuka berdesain gelap (_dark theme_) yang ramah pengguna.
+- 📱 **UI Responsif & Modern**: Tampilan antarmuka berdesain gelap (_dark theme_) dengan layout dua kolom (_side-by-side_) — kamera di kiri dan data terbaca di kanan — tanpa perlu scroll vertikal. Data grid 2 kolom dengan scroll independen di area data.
 
 ---
 
