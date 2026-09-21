@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from bson import ObjectId
 from database import users_collection
@@ -6,6 +7,10 @@ from models import UserModel
 from ocr_utils import extract_ktp_with_groq
 
 app = FastAPI()
+
+@app.get("/")
+async def root():
+    return FileResponse("scan_ktp.html")
 
 app.add_middleware(
     CORSMiddleware,
