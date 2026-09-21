@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Scan KTP</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #10151c;
+    --panel: #171e28;
+    --panel-2: #1d2530;
+    --line: #2a3341;
+    --accent: #5eead4;
+    --accent-dim: #2f4a46;
+    --text: #e8edf4;
+    --muted: #8b97a8;
+    --danger: #f87171;
+    --radius-lg: 22px;
+    --radius-md: 14px;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background:
+      radial-gradient(1100px 600px at 15% -10%, #16324f22, transparent 60%),
+      radial-gradient(900px 500px at 100% 10%, #1c3d3722, transparent 55%),
+      var(--bg);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    display: flex;
+    justify-content: center;
+    padding: 56px 20px 80px;
+  }
+
+  .page { width: 100%; max-width: 620px; }
+
+  .kicker {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 13px;
+    letter-spacing: 0.02em;
+    color: var(--accent);
+    margin: 0 0 8px;
+  }
+
+  h1 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 600;
+    font-size: 30px;
+    margin: 0 0 6px;
+    letter-spacing: -0.01em;
+  }
+
+  .lede {
+    color: var(--muted);
+    font-size: 15px;
+    line-height: 1.6;
+    margin: 0 0 32px;
+    max-width: 46ch;
+  }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+  }
+
+  /* Camera source row */
+  .source-row {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    margin-bottom: 18px;
+    flex-wrap: wrap;
+  }
+
+  select {
+    flex: 1;
+    min-width: 160px;
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    appearance: none;
+  }
+
+  .icon-btn {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: border-color .15s ease, transform .15s ease;
+  }
+  .icon-btn:hover { border-color: var(--accent); }
+  .icon-btn:active { transform: scale(0.94); }
+  .icon-btn svg { width: 18px; height: 18px; }
+
+  /* Scan viewport */
+  .viewport {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #0b0f14;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: 1px solid var(--line);
+  }
+
+  video, .still {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+
+  /* Corner-bracket scan frame, rounded */
+  .frame-guide {
+    position: absolute;
+    inset: 9% 7%;
+    pointer-events: none;
+    display: none;
+  }
+  .frame-guide span {
+    position: absolute;
+    width: 34px;
+    height: 34px;
+    border: 3px solid var(--accent);
+    opacity: 0.9;
+  }
+  .frame-guide .tl { top: 0; left: 0; border-right: none; border-bottom: none; border-top-left-radius: 12px; }
+  .frame-guide .tr { top: 0; right: 0; border-left: none; border-bottom: none; border-top-right-radius: 12px; }
+  .frame-guide .bl { bottom: 0; left: 0; border-right: none; border-top: none; border-bottom-left-radius: 12px; }
+  .frame-guide .br { bottom: 0; right: 0; border-left: none; border-top: none; border-bottom-right-radius: 12px; }
+
+  .placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    color: var(--muted);
+    text-align: center;
+    padding: 20px;
+  }
+  .placeholder svg { width: 40px; height: 40px; opacity: 0.6; }
+  .placeholder p { margin: 0; font-size: 13.5px; max-width: 28ch; line-height: 1.5; }
+
+  .status-pill {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    font-size: 12px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(10,14,18,0.7);
+    border: 1px solid var(--line);
+    color: var(--muted);
+    display: none;
+    align-items: center;
+    gap: 6px;
+  }
+  .status-pill.show { display: inline-flex; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--muted); }
+  .status-pill.live .dot { background: var(--accent); box-shadow: 0 0 0 3px var(--accent-dim); }
+
+  /* Controls under viewport */
+  .actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 16px;
+    flex-wrap: wrap;
+  }
+
+  button.primary, button.ghost, label.filebtn {
+    font-family: 'Inter', sans-serif;
+    font-weight: 500;
+    font-size: 14px;
+    border-radius: 10px;
+    padding: 11px 18px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: opacity .15s ease, transform .15s ease;
+  }
+  button:active, label.filebtn:active { transform: scale(0.98); }
+
+  button.primary {
+    background: var(--accent);
+    color: #08201c;
+    border: none;
+  }
+  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  button.ghost, label.filebtn {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text);
+  }
+  button.ghost:hover, label.filebtn:hover { border-color: var(--accent); }
+
+  input[type=file] { display: none; }
+
+  .hint {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin: 12px 2px 0;
+    line-height: 1.5;
+  }
+  .hint.err { color: var(--danger); }
+
+  /* Results */
+  .results {
+    margin-top: 22px;
+    padding-top: 22px;
+    border-top: 1px solid var(--line);
+    display: none;
+  }
+  .results h2 {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 4px;
+  }
+  .results .sub {
+    color: var(--muted);
+    font-size: 13px;
+    margin: 0 0 18px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px 12px;
+  }
+  .field { display: flex; flex-direction: column; gap: 6px; }
+  .field.full { grid-column: 1 / -1; }
+  .field label {
+    font-size: 12px;
+    color: var(--muted);
+  }
+  .field input {
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    color: var(--text);
+    font-family: 'Inter', sans-serif;
+    font-size: 14px;
+    padding: 9px 11px;
+    border-radius: 9px;
+  }
+  .field input:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+
+  .save-row {
+    margin-top: 20px;
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  canvas { display: none; }
+
+  @media (max-width: 480px) {
+    .grid { grid-template-columns: 1fr; }
+  }
+  .still-wrap {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+.box-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.field-box {
+  position: absolute;
+  border: 1px solid var(--accent);
+  border-radius: 2px;
+  box-shadow: 0 0 0 1px rgba(0,0,0,0.25);
+}
+.field-box::after {
+  content: attr(data-label);
+  position: absolute;
+  top: -14px;
+  left: 0;
+  font-size: 8px;
+  font-family: 'Inter', sans-serif;
+  color: #08201c;
+  background: var(--accent);
+  padding: 0px 4px;
+  border-radius: 3px;
+  white-space: nowrap;
+  line-height: 1.4;
+  opacity: 0.9;
+}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <p class="kicker">Verifikasi identitas</p>
+  <h1>Scan KTP</h1>
+  <p class="lede">Ambil foto KTP lewat kamera perangkat, atau unggah file gambar. Data akan terbaca otomatis — cek dan lengkapi sebelum menyimpan.</p>
+
+  <div class="card">
+
+    <div class="source-row">
+      <select id="cameraSelect" disabled>
+        <option value="">Kamera belum diaktifkan</option>
+      </select>
+      <button class="icon-btn" id="flipBtn" title="Ganti kamera depan/belakang" disabled>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M21 6H8a4 4 0 0 0-4 4v1"/><path d="M7 22l-4-4 4-4"/><path d="M3 18h13a4 4 0 0 0 4-4v-1"/></svg>
+      </button>
+    </div>
+
+    <div class="viewport" id="viewport">
+      <div class="placeholder" id="placeholder">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="6" width="20" height="14" rx="2.5"/><circle cx="12" cy="13" r="3.3"/><path d="M7.5 6l1.4-2.2A1.5 1.5 0 0 1 10.2 3h3.6a1.5 1.5 0 0 1 1.3.8L16.5 6"/></svg>
+        <p>Kamera belum aktif. Klik "Buka Kamera" untuk mulai, atau unggah foto KTP dari file.</p>
+      </div>
+      <video id="video" autoplay playsinline muted></video>
+      <div class="still-wrap" id="stillWrap">
+        <img id="stillPreview" class="still" alt="Pratinjau KTP">
+        <div class="box-overlay" id="boxOverlay"></div>
+       </div>
+      <span class="status-pill" id="statusPill"><span class="dot"></span><span id="statusText">Menghubungkan</span></span>
+      <div class="frame-guide" id="frameGuide">
+        <span class="tl"></span><span class="tr"></span><span class="bl"></span><span class="br"></span>
+      </div>
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div class="actions">
+      <button class="primary" id="openCamBtn" type="button">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 7l-7 5 7 5V7z"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Buka Kamera
+      </button>
+      <button class="ghost" id="captureBtn" type="button" style="display:none;">Ambil Foto</button>
+      <button class="ghost" id="retakeBtn" type="button" style="display:none;">Ambil Ulang</button>
+      <label class="filebtn" for="fileInput">Unggah File</label>
+      <input type="file" id="fileInput" accept="image/*">
+      <button class="primary" id="scanBtn" type="button" disabled>Scan KTP</button>
+    </div>
+
+    <p class="hint" id="hint">Izin kamera akan diminta browser saat kamu klik "Buka Kamera".</p>
+
+    <div class="results" id="results">
+      <h2>Data terbaca</h2>
+      <p class="sub">Periksa kembali setiap field sebelum disimpan — hasil OCR bisa saja meleset.</p>
+
+      <div class="grid">
+        <div class="field full">
+          <label for="name">Nama untuk akun</label>
+          <input id="name" type="text" placeholder="mis. Budi Santoso">
+        </div>
+        <div class="field full">
+          <label for="email">Email</label>
+          <input id="email" type="email" placeholder="mis. budi@email.com">
+        </div>
+        <div class="field full"><label for="nik">NIK</label><input id="nik" type="text"></div>
+        <div class="field full"><label for="nama">Nama sesuai KTP</label><input id="nama" type="text"></div>
+        <div class="field"><label for="tempat_lahir">Tempat lahir</label><input id="tempat_lahir" type="text"></div>
+        <div class="field"><label for="tanggal_lahir">Tanggal lahir</label><input id="tanggal_lahir" type="text"></div>
+        <div class="field"><label for="jenis_kelamin">Jenis kelamin</label><input id="jenis_kelamin" type="text"></div>
+        <div class="field"><label for="agama">Agama</label><input id="agama" type="text"></div>
+        <div class="field full"><label for="alamat">Alamat</label><input id="alamat" type="text"></div>
+        <div class="field"><label for="rt_rw">RT/RW</label><input id="rt_rw" type="text"></div>
+        <div class="field"><label for="kel_desa">Kel/Desa</label><input id="kel_desa" type="text"></div>
+        <div class="field"><label for="kecamatan">Kecamatan</label><input id="kecamatan" type="text"></div>
+        <div class="field"><label for="status_perkawinan">Status perkawinan</label><input id="status_perkawinan" type="text"></div>
+        <div class="field"><label for="pekerjaan">Pekerjaan</label><input id="pekerjaan" type="text"></div>
+        <div class="field"><label for="kewarganegaraan">Kewarganegaraan</label><input id="kewarganegaraan" type="text"></div>
+        <div class="field"><label for="berlaku_hingga">Berlaku hingga</label><input id="berlaku_hingga" type="text"></div>
+      </div>
+
+      <div class="save-row">
+        <button class="primary" id="saveBtn" type="button">Simpan ke Users</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API_BASE = 'http://127.0.0.1:8080';
+
+const video = document.getElementById('video');
+const stillPreview = document.getElementById('stillPreview');
+const placeholder = document.getElementById('placeholder');
+const frameGuide = document.getElementById('frameGuide');
+const statusPill = document.getElementById('statusPill');
+const statusText = document.getElementById('statusText');
+const cameraSelect = document.getElementById('cameraSelect');
+const flipBtn = document.getElementById('flipBtn');
+const openCamBtn = document.getElementById('openCamBtn');
+const captureBtn = document.getElementById('captureBtn');
+const retakeBtn = document.getElementById('retakeBtn');
+const scanBtn = document.getElementById('scanBtn');
+const fileInput = document.getElementById('fileInput');
+const hint = document.getElementById('hint');
+const canvas = document.getElementById('canvas');
+const results = document.getElementById('results');
+
+let stream = null;
+let devices = [];
+let currentFacing = 'environment'; // belakang secara default
+let capturedBlob = null;
+
+function setHint(msg, isError) {
+  hint.textContent = msg;
+  hint.classList.toggle('err', !!isError);
+}
+
+function setStatus(text, live) {
+  statusText.textContent = text;
+  statusPill.classList.add('show');
+  statusPill.classList.toggle('live', !!live);
+}
+
+// Template posisi tiap field, sebagai FRAKSI (0-1) relatif terhadap kartu KTP
+// itu sendiri (bukan terhadap seluruh foto). Dikalibrasi dari tata letak
+// KTP-el Indonesia standar. Karena tata letak KTP baku, ini jauh lebih
+// akurat & konsisten daripada meminta model AI menebak posisi tiap teks.
+const KTP_FIELD_TEMPLATE = {
+  nik:                { x: 0.11, y: 0.230, w: 0.55, h: 0.055 },
+  nama:               { x: 0.11, y: 0.290, w: 0.55, h: 0.055 },
+  tempat_lahir:       { x: 0.11, y: 0.410, w: 0.34, h: 0.050 },
+  tanggal_lahir:      { x: 0.46, y: 0.410, w: 0.20, h: 0.050 },
+  jenis_kelamin:      { x: 0.11, y: 0.470, w: 0.38, h: 0.050 },
+  alamat:             { x: 0.11, y: 0.530, w: 0.55, h: 0.050 },
+  rt_rw:              { x: 0.15, y: 0.650, w: 0.30, h: 0.050 },
+  kel_desa:           { x: 0.15, y: 0.710, w: 0.40, h: 0.050 },
+  kecamatan:          { x: 0.15, y: 0.765, w: 0.40, h: 0.050 },
+  agama:              { x: 0.11, y: 0.820, w: 0.36, h: 0.050 },
+  status_perkawinan:  { x: 0.11, y: 0.875, w: 0.50, h: 0.045 },
+  pekerjaan:          { x: 0.11, y: 0.925, w: 0.55, h: 0.045 },
+  kewarganegaraan:    { x: 0.11, y: 0.955, w: 0.35, h: 0.035 },
+  berlaku_hingga:     { x: 0.11, y: 0.975, w: 0.50, h: 0.035 },
+};
+
+// Ubah fraksi template (relatif kartu) + posisi kartu (card_box, dalam persen
+// terhadap foto asli) menjadi box [x,y,w,h] dalam persen terhadap foto asli.
+function templateToAbsoluteBox(templateFrac, cardBox) {
+  const [cx, cy, cw, ch] = cardBox;
+  return [
+    cx + templateFrac.x * cw,
+    cy + templateFrac.y * ch,
+    templateFrac.w * cw,
+    templateFrac.h * ch,
+  ];
+}
+
+// Hitung ulang posisi box (0-100 dari gambar asli) menjadi posisi visual
+// yang benar di dalam kontainer yang memakai object-fit: cover.
+// Dihitung dalam piksel dulu (bukan campur persen-kontainer dengan
+// persen-gambar-asli), baru dikonversi balik ke persen untuk CSS.
+function mapBoxToCoverPercent(box, naturalW, naturalH, containerW, containerH) {
+  const [xPct, yPct, wPct, hPct] = box;
+
+  // Posisi box dalam piksel gambar asli
+  const bx = (xPct / 100) * naturalW;
+  const by = (yPct / 100) * naturalH;
+  const bw = (wPct / 100) * naturalW;
+  const bh = (hPct / 100) * naturalH;
+
+  // Skala object-fit: cover: gambar diperbesar sampai sisi terpendeknya
+  // menutupi kontainer sepenuhnya, sisi lain kelebihan lalu dipotong simetris.
+  const scale = Math.max(containerW / naturalW, containerH / naturalH);
+  const renderedW = naturalW * scale;
+  const renderedH = naturalH * scale;
+  const offsetX = (renderedW - containerW) / 2; // px terpotong dari kiri (0 jika crop vertikal)
+  const offsetY = (renderedH - containerH) / 2; // px terpotong dari atas (0 jika crop horizontal)
+
+  const outX = ((bx * scale - offsetX) / containerW) * 100;
+  const outY = ((by * scale - offsetY) / containerH) * 100;
+  const outW = ((bw * scale) / containerW) * 100;
+  const outH = ((bh * scale) / containerH) * 100;
+
+  return [outX, outY, outW, outH];
+}
+
+async function listCameras() {
+  try {
+    const all = await navigator.mediaDevices.enumerateDevices();
+    devices = all.filter(d => d.kind === 'videoinput');
+    cameraSelect.innerHTML = '';
+    if (devices.length === 0) {
+      cameraSelect.innerHTML = '<option>Tidak ada kamera terdeteksi</option>';
+      return;
+    }
+    devices.forEach((d, i) => {
+      const opt = document.createElement('option');
+      opt.value = d.deviceId;
+      opt.textContent = d.label || `Kamera ${i + 1}`;
+      cameraSelect.appendChild(opt);
+    });
+    cameraSelect.disabled = false;
+    flipBtn.disabled = devices.length < 2;
+  } catch (e) {
+    console.error(e);
+  }
+}
+
+async function startStream(deviceId) {
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  const constraints = deviceId
+    ? { video: { deviceId: { exact: deviceId } } }
+    : { video: { facingMode: currentFacing } };
+  try {
+    setStatus('Meminta izin kamera', false);
+    stream = await navigator.mediaDevices.getUserMedia(constraints);
+    video.srcObject = stream;
+    video.onloadedmetadata = () => {
+      console.log('Video ready:', video.videoWidth, 'x', video.videoHeight);
+    };
+    video.style.display = 'block';
+    document.getElementById('stillWrap').style.display = 'none';
+    stillPreview.style.display = 'none';
+    placeholder.style.display = 'none';
+    frameGuide.style.display = 'block';
+    setStatus('Kamera aktif', true);
+    setHint('Posisikan KTP di dalam bingkai, lalu klik "Ambil Foto".');
+    captureBtn.style.display = 'inline-flex';
+    retakeBtn.style.display = 'none';
+    openCamBtn.style.display = 'none';
+    await listCameras();
+  } catch (err) {
+    console.error(err);
+    statusPill.classList.remove('show');
+    if (err.name === 'NotAllowedError') {
+      setHint('Izin kamera ditolak. Aktifkan izin kamera untuk situs ini di pengaturan browser, lalu coba lagi.', true);
+    } else if (err.name === 'NotFoundError') {
+      setHint('Tidak ada kamera yang terdeteksi di perangkat ini. Gunakan opsi unggah file sebagai gantinya.', true);
+    } else {
+      setHint('Gagal membuka kamera: ' + err.message, true);
+    }
+  }
+}
+
+openCamBtn.addEventListener('click', () => startStream());
+
+flipBtn.addEventListener('click', () => {
+  currentFacing = currentFacing === 'environment' ? 'user' : 'environment';
+  startStream();
+});
+
+cameraSelect.addEventListener('change', () => {
+  if (cameraSelect.value) startStream(cameraSelect.value);
+});
+
+captureBtn.addEventListener('click', () => {
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  canvas.getContext('2d').drawImage(video, 0, 0);
+  canvas.toBlob(blob => {
+    capturedBlob = blob;
+    stillPreview.src = URL.createObjectURL(blob);
+    stillPreview.style.display = 'block';
+    document.getElementById('boxOverlay').innerHTML = '';
+    document.getElementById('stillWrap').style.display = 'block';
+    video.style.display = 'none';
+    frameGuide.style.display = 'none';
+    statusPill.classList.remove('show');
+    if (stream) stream.getTracks().forEach(t => t.stop());
+    captureBtn.style.display = 'none';
+    retakeBtn.style.display = 'inline-flex';
+    scanBtn.disabled = false;
+    setHint('Foto berhasil diambil. Klik "Scan KTP" untuk membaca datanya, atau ambil ulang jika kurang jelas.');
+  }, 'image/jpeg', 0.92);
+});
+
+retakeBtn.addEventListener('click', () => {
+  document.getElementById('stillWrap').style.display = 'none';
+  document.getElementById('boxOverlay').innerHTML = '';
+  stillPreview.style.display = 'none';
+  placeholder.style.display = 'none';
+  scanBtn.disabled = true;
+  startStream(cameraSelect.value || undefined);
+});
+
+fileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  if (stream) stream.getTracks().forEach(t => t.stop());
+  capturedBlob = file;
+  stillPreview.src = URL.createObjectURL(file);
+  stillPreview.style.display = 'block';
+  document.getElementById('boxOverlay').innerHTML = ''; // bersihkan box lama
+  document.getElementById('stillWrap').style.display = 'block';
+  video.style.display = 'none';
+  placeholder.style.display = 'none';
+  frameGuide.style.display = 'none';
+  statusPill.classList.remove('show');
+  openCamBtn.style.display = 'none';
+  captureBtn.style.display = 'none';
+  retakeBtn.style.display = 'inline-flex';
+  scanBtn.disabled = false;
+  setHint('File dipilih. Klik "Scan KTP" untuk membaca datanya.');
+  fileInput.value = ''; // supaya bisa pilih file yang sama lagi nanti
+});
+
+    let lastScanData = null;
+
+    const drawBoxes = () => {
+      if (!lastScanData) return;
+      const naturalW = stillPreview.naturalWidth;
+      const naturalH = stillPreview.naturalHeight;
+      const containerW = stillPreview.clientWidth;
+      const containerH = stillPreview.clientHeight;
+
+      let cardBox = lastScanData.card_box; // [x, y, w, h] persen terhadap foto asli
+      if (!cardBox || !Array.isArray(cardBox) || cardBox.length !== 4 || cardBox[2] < 40 || cardBox[3] < 30) {
+        cardBox = [0, 0, 100, 100];
+      }
+
+      const overlay = document.getElementById('boxOverlay');
+      overlay.innerHTML = '';
+
+      Object.keys(KTP_FIELD_TEMPLATE).forEach(key => {
+        const input = document.getElementById(key);
+        const field = lastScanData[key];
+        const val = (field && typeof field === 'object') ? (field.value ?? '') : (field ?? '');
+        if (input && document.activeElement !== input) input.value = val;
+
+        if (!val || naturalW === 0 || naturalH === 0) return;
+
+        const absBox = templateToAbsoluteBox(KTP_FIELD_TEMPLATE[key], cardBox);
+        const [x, y, w, h] = mapBoxToCoverPercent(absBox, naturalW, naturalH, containerW, containerH);
+        const div = document.createElement('div');
+        div.className = 'field-box';
+        div.style.left = x + '%';
+        div.style.top = y + '%';
+        div.style.width = w + '%';
+        div.style.height = h + '%';
+        div.dataset.label = key;
+        overlay.appendChild(div);
+      });
+    };
+
+    window.addEventListener('resize', drawBoxes);
+
+    scanBtn.addEventListener('click', async () => {
+      if (!capturedBlob) return;
+      scanBtn.disabled = true;
+      scanBtn.textContent = 'Membaca...';
+      setHint('Sedang memproses gambar…');
+
+      try {
+        const formData = new FormData();
+        formData.append('file', capturedBlob, 'ktp.jpg');
+        const res = await fetch(`${API_BASE}/ktp/scan`, { method: 'POST', body: formData });
+        if (!res.ok) throw new Error('Server merespon status ' + res.status);
+        const data = await res.json();
+        lastScanData = data;
+
+        const overlay = document.getElementById('boxOverlay');
+        overlay.innerHTML = '';
+
+        if (stillPreview.complete && stillPreview.naturalWidth) {
+          drawBoxes();
+        } else {
+          stillPreview.onload = drawBoxes;
+        }
+
+        results.style.display = 'block';
+        results.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        setHint('Data terbaca. Periksa dan lengkapi field di bawah sebelum menyimpan.');
+      } catch (err) {
+        console.error(err);
+        setHint('Gagal membaca KTP: ' + err.message, true);
+      } finally {
+        scanBtn.disabled = false;
+        scanBtn.textContent = 'Scan KTP';
+      }
+    });
+
+document.getElementById('saveBtn').addEventListener('click', async () => {
+  const fields = ['name','email','nik','nama','tempat_lahir','tanggal_lahir','jenis_kelamin',
+    'alamat','rt_rw','kel_desa','kecamatan','agama','status_perkawinan','pekerjaan',
+    'kewarganegaraan','berlaku_hingga'];
+  const payload = {};
+  fields.forEach(id => payload[id] = document.getElementById(id).value);
+
+  if (!payload.name || !payload.email) {
+    setHint('Nama dan email wajib diisi sebelum menyimpan.', true);
+    return;
+  }
+
+  const btn = document.getElementById('saveBtn');
+  btn.disabled = true;
+  btn.textContent = 'Menyimpan...';
+  try {
+    const res = await fetch(`${API_BASE}/users`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    if (!res.ok) throw new Error('Status ' + res.status);
+    const data = await res.json();
+    setHint('Tersimpan ke database dengan ID ' + data.id + '.', false);
+  } catch (err) {
+    setHint('Gagal menyimpan: ' + err.message, true);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Simpan ke Users';
+  }
+});
+
+// Minta daftar kamera lebih awal jika browser sudah punya izin dari sesi sebelumnya
+navigator.mediaDevices?.enumerateDevices().then(all => {
+  const cams = all.filter(d => d.kind === 'videoinput');
+  if (cams.length && cams[0].label) listCameras();
+});
+</script>
+</body>
+</html>
