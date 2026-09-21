@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional
 
+
 class UserModel(BaseModel):
     id: Optional[str] = Field(alias="_id", default=None)
     name: str
