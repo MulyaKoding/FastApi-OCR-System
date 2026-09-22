@@ -41,6 +41,20 @@ async def get_user(user_id: str):
     user["_id"] = str(user["_id"])
     return user
 
+@app.delete("/users/{user_id}")
+async def delete_user(user_id: str):
+    try:
+        obj_id = ObjectId(user_id)
+    except Exception:
+        raise HTTPException(status_code=400, detail="Format user_id tidak valid")
+
+    result = await users_collection.delete_one({"_id": obj_id})
+
+    if result.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="User not found")
+
+    return {"message": "User berhasil dihapus", "id": user_id}
+
 @app.post("/ktp/scan")
 async def scan_ktp(file: UploadFile = File(...)):
     image_bytes = await file.read()
